@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dupsy Restaurant – Order food online</title>
+<style>
+:root{--g:#14452F;--g2:#1D6042;--y:#F5B700;--bg:#F1F5F0;--ink:#16211B;--mut:#5C6B62;--w:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+h1,h2,h3{font-family:Georgia,'Times New Roman',serif;margin:0}
+button{font:inherit;cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+header{background:var(--g);color:#fff;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:wrap}
+.brand{font-family:Georgia,serif;font-size:1.6rem;font-weight:700;margin-right:auto}.brand i{color:var(--y);font-style:normal}
+.hb{background:transparent;color:#fff;border:1.5px solid #ffffff55;border-radius:999px;padding:8px 14px}
+.hb.y{background:var(--y);color:#111;border-color:var(--y);font-weight:700}
+.hero{background:var(--g);color:#fff;padding:28px 16px 34px}.hero div{max-width:1000px;margin:auto}
+.hero h1{font-size:clamp(1.8rem,5vw,3rem);max-width:16ch;line-height:1.1}.hero p{color:#cfe3d6;max-width:46ch}
+main{max-width:1000px;margin:auto;padding:16px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.chip{border:1.5px solid var(--g);background:var(--w);color:var(--g);border-radius:999px;padding:7px 16px;white-space:nowrap}
+.chip.on{background:var(--g);color:#fff}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin-top:14px}
+.item{background:var(--w);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.pic{font-size:3.4rem;text-align:center;padding:22px;background:#E5EEE6}
+.info{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.info h3{font-size:1.05rem}.info small{color:var(--mut)}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
+.price{font-weight:700}
+.add{background:var(--y);border:0;border-radius:8px;padding:8px 14px;font-weight:700}
+.qty{display:flex;align-items:center;gap:8px}.qty button{width:30px;height:30px;border-radius:50%;border:0;background:var(--g);color:#fff}
+.overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.overlay.on{display:flex}
+.box{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+.box h2{margin-bottom:6px}.m{color:var(--mut);margin:0 0 14px}
+.loc{display:block;width:100%;text-align:left;border:1.5px solid #cfd9d1;background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.loc:hover{border-color:var(--g);background:var(--bg)}.loc b,.loc span{display:block}.loc span{color:var(--mut);font-size:.9rem}
+input,textarea{width:100%;padding:11px;border:1.5px solid #cfd9d1;border-radius:10px;font:inherit;margin-bottom:10px}
+.btn{width:100%;background:var(--g);color:#fff;border:0;border-radius:10px;padding:13px;font-weight:700}
+#cart{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);background:#fff;z-index:15;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;padding:16px}
+#cart.on{transform:none}
+#lines{flex:1;overflow:auto}.line{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e6ece7;gap:8px}
+.tot{display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem;margin:10px 0}
+@media(prefers-reduced-motion:reduce){#cart{transition:none}}
+</style></head><body>
+<header>
+  <div class="brand">Dup<i>sy</i></div>
+  <button class="hb" id="locBtn" onclick="locModal()"></button>
+  <button class="hb" id="userBtn" onclick="userClick()"></button>
+  <button class="hb y" id="cartBtn" onclick="toggleCart(true)"></button>
+</header>
+<section class="hero"><div><h1>Hot food from the Dupsy nearest you.</h1><p>Pick your branch, add your meal, and that kitchen gets your order right away.</p></div></section>
+<main><div class="chips" id="chips"></div><div id="grid"></div></main>
+
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()"><div class="box" id="mb"></div></div>
+<aside id="cart" aria-label="Your cart">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h2>Your order</h2><button class="hb" style="color:#111;border-color:#ccc" onclick="toggleCart(false)">Close</button></div>
+  <p class="m" id="cartLoc"></p>
+  <div id="lines"></div>
+  <div class="tot"><span>Total</span><span id="total"></span></div>
+  <input id="addr" placeholder="Delivery address"><input id="note" placeholder="Note for the kitchen (optional)">
+  <button class="btn" onclick="place()">Place order</button>
+</aside>
+
+<script src="config.js"></script>
+<script>
+const C=window.DUPSY_CONFIG;
+const MENU=[
+ {id:1,name:"Party Jollof & Chicken",price:3500,cat:"Rice",e:"🍛"},
+ {id:2,name:"Fried Rice & Turkey",price:4000,cat:"Rice",e:"🍚"},
+ {id:3,name:"Ofada Rice & Ayamase",price:3800,cat:"Rice",e:"🌶️"},
+ {id:4,name:"Pounded Yam & Egusi",price:4200,cat:"Swallow",e:"🥘"},
+ {id:5,name:"Amala, Ewedu & Gbegiri",price:3600,cat:"Swallow",e:"🍲"},
+ {id:6,name:"Suya Platter",price:3000,cat:"Grills",e:"🍢"},
+ {id:7,name:"Grilled Catfish",price:6500,cat:"Grills",e:"🐟"},
+ {id:8,name:"Chapman",price:1500,cat:"Drinks",e:"🍹"},
+ {id:9,name:"Zobo",price:1000,cat:"Drinks",e:"🥤"}];
+const $=s=>document.querySelector(s), fmt=n=>"₦"+n.toLocaleString();
+const ls=(k,v)=>{try{return v===undefined?JSON.parse(localStorage.getItem(k)):localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
+let cart={}, cat="All", locs=C.LOCATIONS, loc=ls("dp_loc"), user=ls("dp_user");
+
+function head(){
+  $("#locBtn").textContent=loc?"📍 "+loc.name:"📍 Choose location";
+  $("#userBtn").textContent=user?"Hi, "+user.name.split(" ")[0]:"Sign in";
+  const n=Object.values(cart).reduce((a,b)=>a+b,0);
+  $("#cartBtn").textContent="Cart ("+n+")";
+}
+function drawMenu(){
+  $("#chips").innerHTML=["All",...new Set(MENU.map(m=>m.cat))].map(c=>`<button class="chip ${c===cat?"on":""}" onclick="cat='${c}';drawMenu()">${c}</button>`).join("");
+  $("#grid").innerHTML=MENU.filter(m=>cat==="All"||m.cat===cat).map(m=>`<div class="item"><div class="pic" aria-hidden="true">${m.e}</div><div class="info"><h3>${m.name}</h3><small>${m.cat}</small><div class="row"><span class="price">${fmt(m.price)}</span>${cart[m.id]?`<span class="qty"><button aria-label="Remove one" onclick="chg(${m.id},-1)">−</button>${cart[m.id]}<button aria-label="Add one" onclick="chg(${m.id},1)">+</button></span>`:`<button class="add" onclick="chg(${m.id},1)">Add</button>`}</div></div></div>`).join("");
+}
+function chg(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];drawMenu();drawCart();head()}
+function drawCart(){
+  const es=Object.entries(cart);let t=0;
+  $("#lines").innerHTML=es.length?es.map(([id,q])=>{const m=MENU.find(x=>x.id==id);t+=m.price*q;return `<div class="line"><span>${m.name}<br><small>${fmt(m.price)}</small></span><span class="qty"><button onclick="chg(${id},-1)">−</button>${q}<button onclick="chg(${id},1)">+</button></span></div>`}).join(""):`<p class="m">Your cart is empty. Add a meal from the menu.</p>`;
+  $("#total").textContent=fmt(t);
+  $("#cartLoc").textContent=loc?"Preparing at "+loc.name:"No branch selected yet";
+}
+function toggleCart(o){drawCart();$("#cart").classList.toggle("on",o)}
+function openModal(h){$("#mb").innerHTML=h;$("#modal").classList.add("on")}
+function closeModal(){$("#modal").classList.remove("on")}
+function locModal(){openModal(`<h2>Choose your nearest branch</h2><p class="m">Your order goes straight to this kitchen.</p>`+locs.map(l=>`<button class="loc" onclick="setLoc('${l.id}')"><b>${l.name}</b><span>${l.address}</span></button>`).join(""))}
+function setLoc(id){loc=locs.find(l=>l.id===id);ls("dp_loc",loc);closeModal();head();drawCart()}
+function loginModal(){openModal(`<h2>Sign in to order</h2><p class="m">Enter your details once and we'll remember them on this device.</p><input id="lname" placeholder="Full name"><input id="lphone" type="tel" placeholder="Phone number"><input id="lmail" type="email" placeholder="Email (optional)"><button class="btn" onclick="login()">Continue</button>`)}
+function login(){const name=$("#lname").value.trim(),phone=$("#lphone").value.trim();if(!name||!phone)return alert("Enter your name and phone number.");user={name,phone,email:$("#lmail").value.trim()};ls("dp_user",user);closeModal();head()}
+function userClick(){user?openModal(`<h2>${user.name}</h2><p class="m">${user.phone}</p><button class="btn" onclick="user=null;ls('dp_user',null);closeModal();head()">Sign out</button>`):loginModal()}
+async function place(){
+  if(!Object.keys(cart).length)return alert("Add something to your cart first.");
+  if(!loc)return locModal();
+  if(!user)return loginModal();
+  const address=$("#addr").value.trim();if(!address)return alert("Enter your delivery address.");
+  const items=Object.entries(cart).map(([id,qty])=>{const m=MENU.find(x=>x.id==id);return{name:m.name,price:m.price,qty}});
+  try{
+    const r=await fetch(C.API_URL+"/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({locationId:loc.id,customer:{...user,address},items,note:$("#note").value})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error);
+    cart={};toggleCart(false);drawMenu();head();
+    openModal(`<h2>Order sent</h2><p class="m">Order ${d.id} is with ${loc.name}. They will call ${user.phone} if they need anything.</p><button class="btn" onclick="closeModal()">Done</button>`);
+  }catch(e){alert("Could not send your order: "+e.message)}
+}
+fetch(C.API_URL+"/api/locations").then(r=>r.json()).then(l=>{locs=l;if(loc&&!l.find(x=>x.id===loc.id)){loc=null}head()}).catch(()=>{});
+drawMenu();head();drawCart();if(!loc)locModal();
+</script></body></html>
